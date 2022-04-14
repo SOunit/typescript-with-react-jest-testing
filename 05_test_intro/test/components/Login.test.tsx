@@ -1,5 +1,13 @@
+import { fireEvent, waitFor } from "@testing-library/react";
 import ReactDOM from "react-dom";
 import { Login } from "../../src/components/Login";
+import { User } from "../../src/models/Model";
+import history from "../../src/utils/history";
+
+const someUser: User = {
+  userName: "someUser",
+  email: "someEmail",
+};
 
 describe("Login component test suite", () => {
   //   beforeAll(() => {
@@ -13,6 +21,8 @@ describe("Login component test suite", () => {
   let container: HTMLDivElement;
   const authServiceMock = { login: jest.fn() };
   const setUserMock = jest.fn();
+  const historyMock = history;
+  history.push = jest.fn();
 
   beforeEach(() => {
     container = document.createElement("div");
@@ -33,16 +43,73 @@ describe("Login component test suite", () => {
   });
 
   test("renders correctly initial document", () => {
+    // eslint-disable-next-line testing-library/no-node-access
     const title = document.querySelector("h2");
     expect(title?.textContent).toBe("Please login");
 
+    // eslint-disable-next-line testing-library/no-node-access
     const inputs = document.querySelectorAll("input");
     expect(inputs).toHaveLength(3);
     expect(inputs[0].value).toBe("");
     expect(inputs[1].value).toBe("");
     expect(inputs[2].value).toBe("Login");
 
+    // eslint-disable-next-line testing-library/no-node-access
     const label = document.querySelector("label");
     expect(label).not.toBeInTheDocument();
+  });
+
+  test("passes credentials correctly", () => {
+    // eslint-disable-next-line testing-library/no-node-access
+    const inputs = document.querySelectorAll("input");
+    const loginInput = inputs[0];
+    const passwordInput = inputs[1];
+    const loginButton = inputs[2];
+
+    fireEvent.change(loginInput, { target: { value: "someUser" } });
+    fireEvent.change(passwordInput, { target: { value: "somePass" } });
+    fireEvent.click(loginButton);
+
+    expect(authServiceMock.login).toBeCalledWith("someUser", "somePass");
+  });
+
+  test("correctly handle login success", async () => {
+    authServiceMock.login.mockResolvedValueOnce(someUser);
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const inputs = document.querySelectorAll("input");
+    const loginInput = inputs[0];
+    const passwordInput = inputs[1];
+    const loginButton = inputs[2];
+
+    fireEvent.change(loginInput, { target: { value: "someUser" } });
+    fireEvent.change(passwordInput, { target: { value: "somePass" } });
+    fireEvent.click(loginButton);
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const statusLabel = await waitFor(() => container.querySelector("label"));
+    expect(statusLabel).toBeInTheDocument();
+    expect(statusLabel).toHaveTextContent("Login successful");
+    expect(setUserMock).toBeCalledWith(someUser);
+    expect(historyMock.push).toBeCalledWith("/profile");
+  });
+
+  test("correctly handle login fail", async () => {
+    authServiceMock.login.mockResolvedValueOnce(undefined);
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const inputs = document.querySelectorAll("input");
+    const loginInput = inputs[0];
+    const passwordInput = inputs[1];
+    const loginButton = inputs[2];
+
+    fireEvent.change(loginInput, { target: { value: "someUser" } });
+    fireEvent.change(passwordInput, { target: { value: "somePass" } });
+    fireEvent.click(loginButton);
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const statusLabel = await waitFor(() => container.querySelector("label"));
+    expect(statusLabel).toBeInTheDocument();
+    expect(statusLabel).toHaveTextContent("Login failed");
   });
 });
