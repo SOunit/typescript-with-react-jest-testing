@@ -10,7 +10,11 @@ const config: Config.InitialOptions = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   testEnvironment: "jsdom",
   collectCoverage: true,
-  collectCoverageFrom: ["src/**/*.{ts,tsx}"],
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "!src/services/**",
+    "!src/react-app-env.d.ts",
+  ],
 };
 
 export default config;
